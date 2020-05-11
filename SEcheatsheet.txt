@@ -1,0 +1,89 @@
+SElinux cheat sheet
+
+=== install utilities ===
+
+yum install setools-console
+installs the following:
+	sesearch
+	seinfo
+	findcon
+
+yum install policycoreutils-python
+installs the following:
+	semanage
+	audit2allow
+	audit2why
+
+=== basic commands ===
+
+- show status:
+getenforse
+
+- show extended status:
+sestatus
+
+- SElinux config:
+/etc/selinux/config
+
+- show linux+SElinux users:
+semanage login -l
+
+- show current SElinux users:
+id -Z
+
+- show SElinux extended attributes:
+ls --context
+ls –Z 
+
+- ls -Z output explanation:
+-rw-r--r--. root root system_u:object_r:admin_home_t:s0 install.log
+---	---	---	user:group:type:domain/type:MLS/MCS level
+
+
+=== change settings ===
+
+- get all boolean SElinux:
+getsebool -a
+
+- setsebool example:
+setsebool -P nis_enabled 1
+
+- get brief boolean description:
+semanage boolean –l | grep <boolean>
+
+- set permissive mode for domain(s):
+semanage permissive -a httpd_t zabbix_t
+
+- show allowed ports for the service:
+semanage port -l | grep http_port_t
+
+- add port to context:
+semanage port -a -t http_port_t -p tcp 9009
+
+- get audit.log explanation:
+audit2why < /var/log/audit/audit.log
+
+```
+Was caused by:
+The boolean nis_enabled was set incorrectly.
+Description:
+Allow nis to enabled
+
+Allow access by executing:
+# setsebool -P nis_enabled 1
+```
+
+- get "what else may depend on 'nis_enabled 1' ":
+sesearch -b nis_enabled -A
+
+- make SElinux policy for allowing restricted operation:
+audit2allow -M httpd_add --debug < /var/log/audit/audit.log
+
+- load mudule:
+semodule -i httpd_add.pp
+
+- check module:
+vagrant]# checkmodule -M -m -o httpd_add.mod httpd_add.te
+
+- remove module:
+semodule -r httpd_add.te
